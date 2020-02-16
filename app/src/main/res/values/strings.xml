@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">CodepathFlashcards</string>
+    <string-array name="questions">
+        <item>Who was the 44th president?</item>
+        <item>12 + 5 = ?</item>
+    </string-array>
+    <string-array name="answers">
+        <item>Barack Obama;George Washington;George W. Bush</item>
+        <item>17;16;18</item>
+    </string-array>
+</resources>
