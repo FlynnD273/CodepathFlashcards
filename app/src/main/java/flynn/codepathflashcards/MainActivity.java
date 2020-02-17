@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity
@@ -32,6 +33,7 @@ public class MainActivity extends AppCompatActivity
     String correct_answer;
     Integer flashcard_number = 0;
     boolean answered = false;
+    boolean show_answers = true;
     Integer correct_answers = 0;
 
     Flashcard flashcard;
@@ -109,6 +111,8 @@ public class MainActivity extends AppCompatActivity
 
     public void display_flashcard(Flashcard card)
     {
+        ((ImageView)findViewById(R.id.visibility_icon)).setImageResource(R.drawable.eye_hide);
+        show_answers = true;
         flashcard_question.setText(card.getQuestion());
         rounded_drawable.setColorFilter(res.getColor(R.color.colorQuestion), PorterDuff.Mode.SRC_ATOP);
         flashcard_question.setBackground(rounded_drawable);
@@ -123,6 +127,28 @@ public class MainActivity extends AppCompatActivity
             answer_views[i].setVisibility(Button.VISIBLE);
             answer_views[i].setText(card.getAnswers()[i]);
         }
+    }
+
+    public void toggle_answers(View v)
+    {
+        if(show_answers)
+        {
+            ((ImageView)findViewById(R.id.visibility_icon)).setImageResource(R.drawable.eye_show);
+            for (Button answer_view : answer_views)
+            {
+                answer_view.setVisibility(Button.INVISIBLE);
+            }
+        }
+        else
+        {
+            ((ImageView)findViewById(R.id.visibility_icon)).setImageResource(R.drawable.eye_hide);
+            for (Button answer_view : answer_views)
+            {
+                answer_view.setVisibility(Button.VISIBLE);
+            }
+        }
+
+        show_answers = !show_answers;
     }
 
     @Override
