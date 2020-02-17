@@ -7,7 +7,7 @@
 
 ### App Walk-though
 
-<img src="https://github.com/K9shyguy/CodepathFlashcards/blob/master/Codepath%20Lab1%20(2).gif" width=200><br>
+<img src="https://github.com/K9shyguy/CodepathFlashcards/blob/master/Codepath%20Lab1%20(3).gif" width=200><br>
 
 ## Required
 - [x] Create New Project in Android Studio
