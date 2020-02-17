@@ -1,7 +1,5 @@
 package flynn.codepathflashcards;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.res.Resources;
@@ -13,21 +11,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Random;
-
 public class MainActivity extends AppCompatActivity
 {
-    Drawable question_drawable;
+    Drawable rounded_drawable;
     Resources res;
 
-    Button btn;
+    Button button_next;
 
     TextView flashcard_question;
 
@@ -35,57 +24,105 @@ public class MainActivity extends AppCompatActivity
     Button answer1;
     Button answer2;
 
+    Button[] answer_views;
+
     String[] questions;
     String[] answers;
 
-    String[] possible_answers;
     String correct_answer;
-    int flashcard_number = 0;
+    Integer flashcard_number = 0;
     boolean answered = false;
-    Random r = new Random();
+    Integer correct_answers = 0;
 
-    void setDrawableColor(Drawable d, int c)
-    {
-        d.setColorFilter(new PorterDuffColorFilter(c, PorterDuff.Mode.SRC_IN));
-    }
+    Flashcard flashcard;
 
     public void answer_OnClick(View v)
     {
         Button tv = (Button) v;
-        if(!answered)
-        {
-            flashcard_question.setText(correct_answer);
-            if(correct_answer.equals(tv.getText().toString()))
-                setDrawableColor(question_drawable, res.getColor(R.color.colorAnswerRight));
-            else
-                setDrawableColor(question_drawable, res.getColor(R.color.colorAnswerWrong));
-            answered = true;
+        if(!answered) {
+            flashcard_question.setText(flashcard.getAnswers()[flashcard.getCorrect()]);
+            rounded_drawable.setColorFilter(res.getColor(R.color.colorAnswered), PorterDuff.Mode.SRC_ATOP);
+            flashcard_question.setBackground(rounded_drawable);
 
-            btn.setVisibility(Button.VISIBLE);
+            int answer_num = -1;
+            for(int i = 0; i < answer_views.length;i++)
+            {
+                if(answer_views[i] == tv)
+                {
+                    answer_num = i;
+                    break;
+                }
+            }
+
+
+            if (answer_num == flashcard.getCorrect())
+            {
+                tv.setBackgroundColor(res.getColor(R.color.colorAnsweredRight));
+                correct_answers++;
+            }
+            else
+            {
+                tv.setBackgroundColor(res.getColor(R.color.colorAnsweredWrong));
+                for(int i = 0; i < 3; i++)
+                {
+                    answer_views[flashcard.getCorrect()].setBackgroundColor(res.getColor(R.color.colorAnswerRight));
+                }
+            }
+
+            answered = true;
+            button_next.setVisibility(Button.VISIBLE);
         }
-    };
+    }
 
     public void next_question(View v)
     {
-        if(++flashcard_number == questions.length)
+        if(flashcard_number + 1 == questions.length)
+        {
+            flashcard_question.setText(getString(R.string.endText, correct_answers.toString(), String.valueOf(questions.length)));
+            rounded_drawable.setColorFilter(res.getColor(R.color.colorAnswered), PorterDuff.Mode.SRC_ATOP);
+            flashcard_question.setBackground(rounded_drawable);
+
+            for (int i = 0; i < 3; i++) {
+                answer_views[i].setVisibility(Button.INVISIBLE);
+            }
+
+            button_next.setText(getString(R.string.Restart));
+            flashcard_number++;
+        }
+        else if (flashcard_number == questions.length)
+        {
+            correct_answers = 0;
             flashcard_number = 0;
-        flashcard_question.setText(questions[flashcard_number]);
-        setDrawableColor(question_drawable, res.getColor(R.color.colorQuestion));
-        loadAnswers();
-        answered = false;
-        btn.setVisibility(Button.INVISIBLE);
+            display_flashcard(load_flashcard(flashcard_number));
+        }
+        else
+        {
+            display_flashcard(load_flashcard(++flashcard_number));
+        }
     }
 
-    void loadAnswers()
+    public Flashcard load_flashcard (int card_number)
     {
-        possible_answers = answers[flashcard_number].split(";", 3);
-        Integer[] i = new Integer[]{0,1,2};
-        List<Integer> l = Arrays.asList(i);
-        Collections.shuffle(l);
-        answer0.setText(possible_answers[l.get(0)]);
-        answer1.setText(possible_answers[l.get(1)]);
-        answer2.setText(possible_answers[l.get(2)]);
-        correct_answer = possible_answers[0];
+        flashcard = new Flashcard(questions[card_number], answers[card_number].split(";"), 0);
+        return flashcard;
+    }
+
+    public void display_flashcard(Flashcard card)
+    {
+        flashcard_question.setText(card.getQuestion());
+        rounded_drawable.setColorFilter(res.getColor(R.color.colorQuestion), PorterDuff.Mode.SRC_ATOP);
+        flashcard_question.setBackground(rounded_drawable);
+
+        button_next.setText(getString(R.string.NextQuestion));
+        answered = false;
+        button_next.setVisibility(Button.INVISIBLE);
+
+        card.randomize();
+        for (int i = 0; i < 3; i++) {
+            answer_views[i].setBackgroundColor(res.getColor(R.color.colorWhite));
+            answer_views[i].setVisibility(Button.VISIBLE);
+            answer_views[i].setText(card.getAnswers()[i]);
+        }
     }
 
     @Override
@@ -99,20 +136,22 @@ public class MainActivity extends AppCompatActivity
         answer1 = findViewById(R.id.answer1);
         answer2 = findViewById(R.id.answer2);
 
+        rounded_drawable = res.getDrawable(R.drawable.round_corner);
+
         questions = res.getStringArray(R.array.questions);
         answers = res.getStringArray(R.array.answers);
 
-        question_drawable = getDrawable(R.drawable.round_corner).mutate();
-        setDrawableColor(question_drawable, res.getColor(R.color.colorQuestion));
 
-        flashcard_question.setText(questions[flashcard_number]);
-        flashcard_question.setBackground(question_drawable);
-        //flashcard_question.setBackgroundColor(getColor(R.color.colorQuestion));
 
-        ArrayList<TextView> l = new ArrayList<TextView>();
+        button_next = findViewById(R.id.nextButton);
 
-        btn = (Button)findViewById(R.id.nextButton);
+        answer_views = new Button[]{answer0, answer1, answer2};
 
-        loadAnswers();
+        for(int i = 0; i < 3; i++)
+        {
+            answer_views[i].setBackgroundColor(res.getColor(R.color.colorWhite));
+        }
+
+        display_flashcard(load_flashcard(flashcard_number));
     }
 }

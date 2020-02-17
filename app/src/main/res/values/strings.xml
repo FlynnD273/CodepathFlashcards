@@ -3,9 +3,18 @@
     <string-array name="questions">
         <item>Who was the 44th president?</item>
         <item>12 + 5 = ?</item>
+        <item>Is a word in this sentence spelled wrong?</item>
+        <item>How much wood could a woodchuck chuck if a woodchuck could chuck wood?</item>
+        <item>You have a 1/3 chance of getting this one right.</item>
     </string-array>
     <string-array name="answers">
         <item>Barack Obama;George Washington;George W. Bush</item>
         <item>17;16;18</item>
+        <item>yes;no;maybe</item>
+        <item>700 lbs;yes;100 lbs</item>
+        <item>haha;haha;haha</item>
     </string-array>
+    <string name="endText">You got %1$s questions right out of %2$s</string>
+    <string name="Restart">Restart</string>
+    <string name="NextQuestion">Next Question</string>
 </resources>
