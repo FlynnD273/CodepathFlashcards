@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-class Flashcard
+public class Flashcard
 {
     Flashcard(String question, String[] answers, int correct)
     {
