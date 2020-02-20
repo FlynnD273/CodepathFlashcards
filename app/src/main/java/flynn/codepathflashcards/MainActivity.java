@@ -13,6 +13,9 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import static android.view.View.INVISIBLE;
+import static android.view.View.VISIBLE;
+
 public class MainActivity extends AppCompatActivity
 {
     Drawable rounded_drawable;
@@ -76,7 +79,7 @@ public class MainActivity extends AppCompatActivity
             }
 
             answered = true;
-            button_next.setVisibility(Button.VISIBLE);
+            button_next.setVisibility(VISIBLE);
         }
     }
 
@@ -89,12 +92,13 @@ public class MainActivity extends AppCompatActivity
             flashcard_question.setBackground(rounded_drawable);
 
             for (Button answer_view : answer_views) {
-                answer_view.setVisibility(Button.INVISIBLE);
+                answer_view.setVisibility(INVISIBLE);
             }
 
             button_next.setText(getString(R.string.Restart));
             flashcard_number++;
             end_screen = true;
+            updateVisibility();
         }
         else if (end_screen)
         {
@@ -102,6 +106,7 @@ public class MainActivity extends AppCompatActivity
             flashcard_number = 0;
             displayFlashcard(loadFlashcard(flashcard_number), true);
             end_screen = false;
+            updateVisibility();
         }
         else
         {
@@ -126,13 +131,13 @@ public class MainActivity extends AppCompatActivity
 
         button_next.setText(getString(R.string.NextQuestion));
         answered = false;
-        button_next.setVisibility(Button.INVISIBLE);
+        button_next.setVisibility(INVISIBLE);
 
         if(randomize)
             card.randomize();
         for (int i = 0; i < answer_views.length; i++) {
             answer_views[i].setBackgroundColor(res.getColor(R.color.colorWhite));
-            answer_views[i].setVisibility(Button.VISIBLE);
+            answer_views[i].setVisibility(VISIBLE);
             answer_views[i].setText(card.getAnswers()[i]);
         }
     }
@@ -150,18 +155,21 @@ public class MainActivity extends AppCompatActivity
     {
         if(show_answers && !end_screen)
         {
+            ((ImageView)findViewById(R.id.visibility_icon)).setVisibility(VISIBLE);
             ((ImageView)findViewById(R.id.visibility_icon)).setImageResource(R.drawable.eye_hide);
             for (Button answer_view : answer_views)
             {
-                answer_view.setVisibility(Button.VISIBLE);
+                answer_view.setVisibility(VISIBLE);
             }
         }
         else
         {
+            if(end_screen)
+                ((ImageView)findViewById(R.id.visibility_icon)).setVisibility(INVISIBLE);
             ((ImageView)findViewById(R.id.visibility_icon)).setImageResource(R.drawable.eye_show);
             for (Button answer_view : answer_views)
             {
-                answer_view.setVisibility(Button.INVISIBLE);
+                answer_view.setVisibility(INVISIBLE);
             }
         }
     }
@@ -177,7 +185,7 @@ public class MainActivity extends AppCompatActivity
             show_answers = false;
             updateVisibility();
 
-            button_next.setVisibility(Button.VISIBLE);
+            button_next.setVisibility(VISIBLE);
             button_next.setText(getString(R.string.Restart));
         }
         else if(answered)
@@ -201,7 +209,7 @@ public class MainActivity extends AppCompatActivity
                 }
             }
 
-            button_next.setVisibility(Button.VISIBLE);
+            button_next.setVisibility(VISIBLE);
         }
         else
         {
