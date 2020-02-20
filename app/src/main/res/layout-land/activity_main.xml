@@ -94,5 +94,4 @@
         app:layout_constraintRight_toRightOf="parent"
         app:srcCompat="@drawable/eye_hide"
         android:contentDescription="@string/eye_image_description" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>
