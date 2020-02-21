@@ -106,7 +106,7 @@ public class MainActivity extends AppCompatActivity
     public void nextQuestion(View v)
     {
         flashcard_number++;
-        if(flashcard_number + 1 == questions.length)
+        if(flashcard_number == questions.length)
         {
             displayEndScreen();
         }
@@ -189,13 +189,15 @@ public class MainActivity extends AppCompatActivity
                 num_correct_answers++;
         }
 
-        flashcard_question.setText(getString(R.string.endText, Integer.toString(num_correct_answers), String.valueOf(questions.length)));
+        flashcard_question.setText(getString(R.string.endText, String.valueOf(num_correct_answers), String.valueOf(questions.length)));
 
         show_answers = false;
         updateVisibility();
 
         button_next.setVisibility(VISIBLE);
         button_next.setText(getString(R.string.Restart));
+
+        end_screen = true;
     }
 
     public void updateLayoutState()
