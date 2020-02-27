@@ -10,4 +10,5 @@
     <color name="colorAnswered">#9ECBFF</color>
     <color name="colorBlack">#000000</color>
     <color name="colorWhite">#FFFFFF</color>
+    <color name="colorNewCard">#9FAEFF</color>
 </resources>

@@ -2,16 +2,20 @@ package flynn.codepathflashcards;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.GridView;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import java.io.Serializable;
+import java.util.ArrayList;
 
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
@@ -26,8 +30,7 @@ public class MainActivity extends AppCompatActivity
     Button button_next;
     Button[] answer_views;
 
-    String[] questions;
-    String[] answers;
+    ArrayList<Flashcard> flashcards;
 
     UserAnswer[] user_answers;
 
@@ -38,13 +41,23 @@ public class MainActivity extends AppCompatActivity
     boolean answered = false;
     boolean show_answers = true;
 
-    Flashcard flashcard;
+    Flashcard current_flashcard;
+
+    public void reset_flashcards()
+    {
+        String[] questions = res.getStringArray(R.array.questions);
+        String[] answers = res.getStringArray(R.array.answers);
+        flashcards = new ArrayList<Flashcard>();
+
+
+        for(int i = 0; i < 1; i++)//answers.length; i++)
+        {
+            flashcards.add(new Flashcard(questions[i], answers[i].split(";")));
+        }
+    }
 
     public void resetFlashcardApp()
     {
-        res = getResources();
-
-
         flashcard_question = findViewById(R.id.flashcard_content);
 
         answer_views = new Button[]{findViewById(R.id.answer0), findViewById(R.id.answer1), findViewById(R.id.answer2)};
@@ -55,9 +68,7 @@ public class MainActivity extends AppCompatActivity
         rounded_drawable = res.getDrawable(R.drawable.round_corner);
         button_next = findViewById(R.id.next_button);
 
-        questions = res.getStringArray(R.array.questions);
-        answers = res.getStringArray(R.array.answers);
-        user_answers = new UserAnswer[questions.length];
+        user_answers = new UserAnswer[flashcards.size()];
         flashcard_number = 0;
         end_screen = false;
 
@@ -81,12 +92,12 @@ public class MainActivity extends AppCompatActivity
                 }
             }
 
-            flashcard_question.setText(flashcard.getAnswers()[flashcard.getCorrect()]);
+            flashcard_question.setText(current_flashcard.getAnswers()[current_flashcard.getCorrectIndex()]);
             rounded_drawable.setColorFilter(res.getColor(R.color.colorAnswered), PorterDuff.Mode.SRC_ATOP);
-            //flashcard_question.setBackground(rounded_drawable);
-            user_answers[flashcard_number] = new UserAnswer(answers[flashcard.getCorrect()], answers[answer_num], false);
+            flashcard_question.setBackground(rounded_drawable);
+            user_answers[flashcard_number] = new UserAnswer(current_flashcard.getCorrectAnswer(), current_flashcard.getAnswers()[answer_num], false);
 
-            if (answer_num == flashcard.getCorrect())
+            if (answer_num == current_flashcard.getCorrectIndex())
             {
                 answer_views[answer_num].setBackgroundColor(res.getColor(R.color.colorAnsweredRight));
                 user_answers[flashcard_number].setIsCorrect(true);
@@ -94,7 +105,7 @@ public class MainActivity extends AppCompatActivity
             else
             {
                 answer_views[answer_num].setBackgroundColor(res.getColor(R.color.colorAnsweredWrong));
-                answer_views[flashcard.getCorrect()].setBackgroundColor(res.getColor(R.color.colorAnswerRight));
+                answer_views[current_flashcard.getCorrectIndex()].setBackgroundColor(res.getColor(R.color.colorAnswerRight));
                 user_answers[flashcard_number].setIsCorrect(false);
             }
 
@@ -106,7 +117,7 @@ public class MainActivity extends AppCompatActivity
     public void nextQuestion(View v)
     {
         flashcard_number++;
-        if(flashcard_number == questions.length)
+        if(flashcard_number == flashcards.size())
         {
             displayEndScreen();
         }
@@ -116,15 +127,15 @@ public class MainActivity extends AppCompatActivity
         }
         else
         {
-            flashcard = loadFlashcard(flashcard_number);
-            displayFlashcard(flashcard, true);
+            current_flashcard = loadFlashcard(flashcard_number);
+            displayFlashcard(current_flashcard, true);
         }
     }
 
     public Flashcard loadFlashcard(int card_number)
     {
-        flashcard = new Flashcard(questions[card_number], answers[card_number].split(";"), 0);
-        return flashcard;
+        current_flashcard = flashcards.get(flashcard_number);
+        return current_flashcard;
     }
 
     public void displayFlashcard(Flashcard card, boolean randomize)
@@ -150,7 +161,7 @@ public class MainActivity extends AppCompatActivity
 
     public void toggleAnswers(View v)
     {
-        if(flashcard_number < questions.length)
+        if(flashcard_number < flashcards.size())
         {
             show_answers = !show_answers;
             updateVisibility();
@@ -182,6 +193,7 @@ public class MainActivity extends AppCompatActivity
 
     public void displayEndScreen()
     {
+        end_screen = true;
         int num_correct_answers = 0;
         for(UserAnswer userAnswer : user_answers)
         {
@@ -189,15 +201,15 @@ public class MainActivity extends AppCompatActivity
                 num_correct_answers++;
         }
 
-        flashcard_question.setText(getString(R.string.endText, String.valueOf(num_correct_answers), String.valueOf(questions.length)));
+        flashcard_question.setText(getString(R.string.endText, String.valueOf(num_correct_answers), String.valueOf(flashcards.size())));
+        rounded_drawable.setColorFilter(res.getColor(R.color.colorAnswered), PorterDuff.Mode.SRC_ATOP);
+        flashcard_question.setBackground(rounded_drawable);
 
         show_answers = false;
         updateVisibility();
 
         button_next.setVisibility(VISIBLE);
         button_next.setText(getString(R.string.Restart));
-
-        end_screen = true;
     }
 
     public void updateLayoutState()
@@ -208,13 +220,13 @@ public class MainActivity extends AppCompatActivity
         }
         else if(answered)
         {
-            displayFlashcard(flashcard, false);
+            displayFlashcard(current_flashcard, false);
             answered = true;
-            flashcard_question.setText(flashcard.getAnswers()[flashcard.getCorrect()]);
+            flashcard_question.setText(current_flashcard.getAnswers()[current_flashcard.getCorrectIndex()]);
             rounded_drawable.setColorFilter(res.getColor(R.color.colorAnswered), PorterDuff.Mode.SRC_ATOP);
             flashcard_question.setBackground(rounded_drawable);
 
-            if (answer_num == flashcard.getCorrect())
+            if (answer_num == current_flashcard.getCorrectIndex())
             {
                 answer_views[answer_num].setBackgroundColor(res.getColor(R.color.colorAnsweredRight));
             }
@@ -223,7 +235,7 @@ public class MainActivity extends AppCompatActivity
                 answer_views[answer_num].setBackgroundColor(res.getColor(R.color.colorAnsweredWrong));
                 for(int i = 0; i < answer_views.length; i++)
                 {
-                    answer_views[flashcard.getCorrect()].setBackgroundColor(res.getColor(R.color.colorAnswerRight));
+                    answer_views[current_flashcard.getCorrectIndex()].setBackgroundColor(res.getColor(R.color.colorAnswerRight));
                 }
             }
 
@@ -231,8 +243,14 @@ public class MainActivity extends AppCompatActivity
         }
         else
         {
-            displayFlashcard(flashcard, false);
+            displayFlashcard(current_flashcard, false);
         }
+    }
+
+    public void addFlashcardLayout(View v)
+    {
+        Intent intent = new Intent(MainActivity.this, AddFlashcardActivity.class);
+        MainActivity.this.startActivity(intent);
     }
 
     @Override
@@ -241,14 +259,22 @@ public class MainActivity extends AppCompatActivity
 
         // Save the state of item position
         outState.putInt("flashcard_number", flashcard_number);
-        outState.putInt("flashcard_correct", flashcard.getCorrect());
         outState.putInt("answer_num", answer_num);
         outState.putBoolean("answered", answered);
         outState.putBoolean("end_screen", end_screen);
         outState.putBoolean("show_answers", show_answers);
-        outState.putString("flashcard_question", flashcard.getQuestion());
-        outState.putStringArray("flashcard_answers", flashcard.getAnswers());
+        outState.putSerializable("flashcard", current_flashcard);
         outState.putSerializable("user_answers", user_answers);
+        outState.putSerializable("flashcards", (Serializable) flashcards);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        if(resultCode == 0)
+        {
+            flashcards.add((Flashcard) data.getExtras().getSerializable("flashcards"));
+        }
     }
 
     @Override
@@ -261,7 +287,8 @@ public class MainActivity extends AppCompatActivity
         user_answers = (UserAnswer[]) savedInstanceState.getSerializable("user_answers");
         answered = savedInstanceState.getBoolean("answered");
         end_screen = savedInstanceState.getBoolean("end_screen");
-        flashcard = new Flashcard(savedInstanceState.getString("flashcard_question"), savedInstanceState.getStringArray("flashcard_answers"), savedInstanceState.getInt("flashcard_correct"));
+        current_flashcard = (Flashcard)savedInstanceState.getSerializable("flashcard");
+        flashcards = (ArrayList<Flashcard>)savedInstanceState.getSerializable("flashcards");
 
         updateLayoutState();
         show_answers = savedInstanceState.getBoolean("show_answers");
@@ -274,6 +301,9 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        res = getResources();
+
+        reset_flashcards();
         resetFlashcardApp();
     }
 }

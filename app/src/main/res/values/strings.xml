@@ -18,4 +18,8 @@
     <string name="Restart">Restart</string>
     <string name="NextQuestion">Next Question</string>
     <string name="eye_image_description">show hide eye</string>
+    <string name="question">Question</string>
+    <string name="correct_answer">Correct Answer</string>
+    <string name="incorrect_answer_1">Incorrect Answer 1</string>
+    <string name="incorrect_answer_2">Incorrect Answer 2</string>
 </resources>

@@ -1,6 +1,8 @@
 package flynn.codepathflashcards;
 
-public class UserAnswer
+import java.io.Serializable;
+
+public class UserAnswer implements Serializable
 {
     private String correct_answer;
     public String getCorrectAnswer()

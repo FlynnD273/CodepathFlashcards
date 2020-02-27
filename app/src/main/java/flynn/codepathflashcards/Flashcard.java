@@ -1,11 +1,22 @@
 package flynn.codepathflashcards;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class Flashcard
+public class Flashcard implements Serializable
 {
+    Flashcard(String question, String[] answers)
+    {
+        setAnswers(answers);
+        _correct = 0;
+        _question = question;
+    }
+
     Flashcard(String question, String[] answers, int correct)
     {
         setAnswers(answers);
@@ -14,7 +25,8 @@ public class Flashcard
     }
 
     private String _question;
-    String getQuestion()
+
+    public String getQuestion()
     {
         return _question;
     }
@@ -30,12 +42,16 @@ public class Flashcard
     }
 
     private int _correct;
-    int getCorrect()
+    int getCorrectIndex()
     {
         return _correct;
     }
 
-    String[] randomize()
+    public String getCorrectAnswer() {
+        return getAnswers()[getCorrectIndex()];
+    }
+
+    public String[] randomize()
     {
         Integer[] intArray = new Integer[getAnswers().length];
         for(int i = 0; i < intArray.length; i++)
