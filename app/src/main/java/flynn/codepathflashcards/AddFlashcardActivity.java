@@ -16,9 +16,9 @@ public class AddFlashcardActivity extends AppCompatActivity
 
     public void addFlashcardCancel(View v)
     {
-        Intent intent = new Intent();
-        intent.putExtra("flashcard", (Serializable) flashcard);
-        setResult(RESULT_OK, intent);
+        Intent data = new Intent(getApplicationContext(), AddFlashcardActivity.class);
+        data.putExtra("flashcard", flashcard);
+        setResult(RESULT_OK, data);
         finish();
     }
 
