@@ -3,14 +3,16 @@ package flynn.codepathflashcards;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.animation.Animator;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewAnimationUtils;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -18,64 +20,50 @@ import android.widget.Toast;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 
 public class MainActivity extends AppCompatActivity
 {
     Random random;
 
-    Drawable rounded_drawable;
     Resources res;
 
     TextView flashcard_question;
+    TextView flashcard_answer;
 
-    ImageView button_next;
     Button[] answer_views;
 
     ImageView add;
     ImageView edit;
+    ImageView button_next;
 
     List<Flashcard> flashcards;
 
-    ArrayList<UserAnswer> user_answers;
-
-    int answer_num = -1;
+    int user_answered = 0;
     int flashcard_number = 0;
 
-    boolean end_screen = false;
     boolean answered = false;
-    boolean show_answers = true;
 
     Flashcard current_flashcard;
 
     FlashcardDatabase flashcardDatabase;
 
+    Animation leftOutAnim;
+    Animation rightInAnim;
+
     //Reload all flashcards from resource strings
     public void resetFlashcards()
     {
-        /*String[] questions = res.getStringArray(R.array.questions);
-        String[] answers = res.getStringArray(R.array.answers);
-        flashcards = new ArrayList<Flashcard>();
-
-
-        for(int i = 0; i < answers.length; i++)
-        {
-            flashcards.add(new Flashcard(questions[i], answers[i].split(";")));
-        }*/
         flashcards = flashcardDatabase.getAllCards();
     }
 
     //Sets state to starting state
     public void resetFlashcardApp()
     {
-        user_answers = new ArrayList<>();
         flashcard_number = 0;
-        end_screen = false;
 
         loadFlashcard(flashcard_number);
     }
@@ -135,40 +123,49 @@ public class MainActivity extends AppCompatActivity
             Button tv = (Button) v;
 
             //Find out which answer was clicked
-            answer_num = 0;
+            user_answered = 0;
             for(int i = 0; i < answer_views.length;i++)
             {
                 if(answer_views[i] == tv)
                 {
-                    answer_num = i;
+                    user_answered = i;
                     break;
                 }
             }
 
-            //No out of bounds exceptions for the user_answers List anymore!
-            while(user_answers.size() <= flashcard_number)
-            {
-                user_answers.add(new UserAnswer("", "", false));
-            }
-
             //Takes care of the appearance of the wuestion textView
-            flashcard_question.setText(current_flashcard.getAnswers()[current_flashcard.getCorrectIndex()]);
-            rounded_drawable.setColorFilter(res.getColor(R.color.colorAnswered), PorterDuff.Mode.SRC_ATOP);
-            flashcard_question.setBackground(rounded_drawable);
-            user_answers.set(flashcard_number, new UserAnswer(current_flashcard.getCorrectAnswer(), current_flashcard.getAnswers()[answer_num], false));
+            flashcard_answer.setText(current_flashcard.getAnswers()[current_flashcard.getCorrectIndex()]);
+
+
+
+            // get the center for the clipping circle
+            int cx = flashcard_answer.getWidth() / 2;
+            int cy = flashcard_answer.getHeight() / 2;
+
+            // get the final radius for the clipping circle
+            float finalRadius = (float) Math.hypot(cx, cy);
+
+            // create the animator for this view (the start radius is zero)
+            Animator anim = ViewAnimationUtils.createCircularReveal(flashcard_answer, cx, cy, 0f, finalRadius);
+
+            // hide the question and show the answer to prepare for playing the animation!
+            flashcard_answer.setVisibility(View.VISIBLE);
+
+            anim.setDuration(500);
+            anim.start();
+
+
 
             //If answered correctly, sets color to intense green
-            if (answer_num == current_flashcard.getCorrectIndex())
+            if (user_answered == current_flashcard.getCorrectIndex())
             {
-                answer_views[answer_num].setBackgroundColor(res.getColor(R.color.colorAnsweredRight));
-                user_answers.get(flashcard_number).setIsCorrect(true);
+                answer_views[user_answered].setBackgroundColor(res.getColor(R.color.colorAnsweredRight));
             }
             //Otherwise highlight correct answer and chosen answer
             else
             {
-                answer_views[answer_num].setBackgroundColor(res.getColor(R.color.colorAnsweredWrong));
+                answer_views[user_answered].setBackgroundColor(res.getColor(R.color.colorAnsweredWrong));
                 answer_views[current_flashcard.getCorrectIndex()].setBackgroundColor(res.getColor(R.color.colorAnswerRight));
-                user_answers.get(flashcard_number).setIsCorrect(false);
             }
 
             //Show the "next question" button
@@ -197,24 +194,18 @@ public class MainActivity extends AppCompatActivity
 
     public void displayFlashcard(Flashcard card, boolean randomize)
     {
-        //Always show answers by default if loading a new flashcard
-        show_answers = true;
-        updateVisibility();
-
         edit.setVisibility(VISIBLE);
         add.setVisibility(VISIBLE);
+        flashcard_answer.setVisibility(View.INVISIBLE);
+
+        flashcard_question.startAnimation(leftOutAnim);
 
         if(card != null)
         {
             //Sets color of the question textView to yellow and shows question
             flashcard_question.setText(card.getQuestion());
-            rounded_drawable.setColorFilter(res.getColor(R.color.colorQuestion), PorterDuff.Mode.SRC_ATOP);
-            flashcard_question.setBackground(rounded_drawable);
 
-            //Takes care of visibility and content of the "next question" button
-            //button_next.setText(getString(R.string.NextQuestion));
             answered = false;
-            //button_next.setVisibility(INVISIBLE);
 
             //Randomize the answers so the first answer isn't always the correct one
             if (randomize)
@@ -229,13 +220,8 @@ public class MainActivity extends AppCompatActivity
         else
         {
             flashcard_question.setText("");
-            rounded_drawable.setColorFilter(res.getColor(R.color.colorQuestion), PorterDuff.Mode.SRC_ATOP);
-            flashcard_question.setBackground(rounded_drawable);
 
-            //Takes care of visibility and content of the "next question" button
-            //button_next.setText(getString(R.string.NextQuestion));
             answered = false;
-            //button_next.setVisibility(INVISIBLE);
 
             //Set the answer ButtonViews to the appropriate text and color
             for (Button answer_view : answer_views) {
@@ -245,91 +231,28 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    /*public void toggleAnswerVisibility(View v)
-    {
-        if(!end_screen)
-        {
-            show_answers = !show_answers;
-            //updateVisibility();
-        }
-    }*/
-
-    //Takes care of the visibility of the answers and the state of the eye button
-    public void updateVisibility()
-    {
-        if(show_answers && !end_screen)
-        {
-            //((ImageView)findViewById(R.id.visibility_icon)).setVisibility(VISIBLE);
-            //((ImageView)findViewById(R.id.visibility_icon)).setImageResource(R.drawable.eye_hide);
-            for (Button answer_view : answer_views)
-            {
-                answer_view.setVisibility(VISIBLE);
-            }
-        }
-        else
-        {
-            for (Button answer_view : answer_views)
-                answer_view.setVisibility(INVISIBLE);
-        }
-    }
-
-    //Shows the summary screen
-    /*public void displayEndScreen()
-    {
-        end_screen = true;
-        int num_correct_answers = 0;
-        for(UserAnswer userAnswer : user_answers)
-        {
-            if(userAnswer.isCorrect())
-                num_correct_answers++;
-        }
-
-        //Score
-        flashcard_question.setText(getString(R.string.endText, String.valueOf(num_correct_answers), String.valueOf(flashcards.size())));
-        rounded_drawable.setColorFilter(res.getColor(R.color.colorAnswered), PorterDuff.Mode.SRC_ATOP);
-        flashcard_question.setBackground(rounded_drawable);
-
-        //Hide answer buttons
-        show_answers = false;
-        updateVisibility();
-
-        button_next.setVisibility(VISIBLE);
-        //button_next.setText(getString(R.string.Restart));
-
-        edit.setVisibility(INVISIBLE);
-        add.setVisibility(INVISIBLE);
-    }*/
-
     public void updateLayoutState()
     {
-        /*if(end_screen)
-        {
-            displayEndScreen();
-        }
-        else */if(answered)
+        if(answered)
         {
             edit.setVisibility(VISIBLE);
             add.setVisibility(VISIBLE);
             displayFlashcard(current_flashcard, false);
             answered = true;
-            flashcard_question.setText(current_flashcard.getAnswers()[current_flashcard.getCorrectIndex()]);
-            rounded_drawable.setColorFilter(res.getColor(R.color.colorAnswered), PorterDuff.Mode.SRC_ATOP);
-            flashcard_question.setBackground(rounded_drawable);
+            flashcard_answer.setText(current_flashcard.getAnswers()[current_flashcard.getCorrectIndex()]);
 
-            if (answer_num == current_flashcard.getCorrectIndex())
+            if (user_answered == current_flashcard.getCorrectIndex())
             {
-                answer_views[answer_num].setBackgroundColor(res.getColor(R.color.colorAnsweredRight));
+                answer_views[user_answered].setBackgroundColor(res.getColor(R.color.colorAnsweredRight));
             }
             else
             {
-                answer_views[answer_num].setBackgroundColor(res.getColor(R.color.colorAnsweredWrong));
+                answer_views[user_answered].setBackgroundColor(res.getColor(R.color.colorAnsweredWrong));
                 for(int i = 0; i < answer_views.length; i++)
                 {
                     answer_views[current_flashcard.getCorrectIndex()].setBackgroundColor(res.getColor(R.color.colorAnswerRight));
                 }
             }
-
-            button_next.setVisibility(VISIBLE);
         }
         else
         {
@@ -344,6 +267,7 @@ public class MainActivity extends AppCompatActivity
             Intent intent = new Intent(MainActivity.this, EditFlashcardActivity.class);
             intent.putExtra("current_flashcard", (Serializable) current_flashcard);
             MainActivity.this.startActivityForResult(intent, 1);
+            overridePendingTransition(R.anim.left_in, R.anim.right_out);
         }
     }
 
@@ -352,6 +276,7 @@ public class MainActivity extends AppCompatActivity
     {
         Intent intent = new Intent(MainActivity.this, EditFlashcardActivity.class);
         MainActivity.this.startActivityForResult(intent, 0);
+        overridePendingTransition(R.anim.right_in, R.anim.left_out);
     }
 
     @Override
@@ -360,12 +285,9 @@ public class MainActivity extends AppCompatActivity
 
         // Save the state of item position
         outState.putInt("flashcard_number", flashcard_number);
-        outState.putInt("answer_num", answer_num);
+        outState.putInt("answer_num", user_answered);
         outState.putBoolean("answered", answered);
-        outState.putBoolean("end_screen", end_screen);
-        //outState.putBoolean("show_answers", show_answers);
         outState.putSerializable("flashcard", current_flashcard);
-        outState.putSerializable("user_answers", user_answers);
         outState.putSerializable("flashcards", (Serializable)flashcards);
     }
 
@@ -374,11 +296,9 @@ public class MainActivity extends AppCompatActivity
     {
         super.onRestoreInstanceState(savedInstanceState);
 
-        answer_num = savedInstanceState.getInt("answer_num");
+        user_answered = savedInstanceState.getInt("answer_num");
         flashcard_number = savedInstanceState.getInt("flashcard_number");
-        user_answers = (ArrayList<UserAnswer>) savedInstanceState.getSerializable("user_answers");
         answered = savedInstanceState.getBoolean("answered");
-        end_screen = savedInstanceState.getBoolean("end_screen");
         current_flashcard = (Flashcard)savedInstanceState.getSerializable("flashcard");
         flashcards = (ArrayList<Flashcard>)savedInstanceState.getSerializable("flashcards");
 
@@ -422,20 +342,40 @@ public class MainActivity extends AppCompatActivity
         //INITIALIZE EVERYTHING
         flashcardDatabase = new FlashcardDatabase(getApplicationContext());
 
-        flashcard_question = findViewById(R.id.flashcard_content);
+        flashcard_question = findViewById(R.id.flashcard_question);
+        flashcard_answer = findViewById(R.id.flashcard_answer);;
 
         answer_views = new Button[]{findViewById(R.id.answer0), findViewById(R.id.answer1), findViewById(R.id.answer2)};
         for (Button answer_view : answer_views) {
             answer_view.setBackgroundColor(res.getColor(R.color.colorWhite));
         }
 
-        rounded_drawable = res.getDrawable(R.drawable.round_corner);
         button_next = findViewById(R.id.next_button);
 
         add = findViewById(R.id.add);
         edit = findViewById(R.id.edit);
 
         random = new Random();
+
+        leftOutAnim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.left_out);
+        rightInAnim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.right_in);
+
+        leftOutAnim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                // this method is called when the animation first starts
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                flashcard_question.startAnimation(rightInAnim);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+                // we don't need to worry about this method
+            }
+        });
 
         //Show flashcard
         resetFlashcards();

@@ -22,4 +22,6 @@
     <string name="correct_answer">Correct Answer</string>
     <string name="incorrect_answer_1">Incorrect Answer 1</string>
     <string name="incorrect_answer_2">Incorrect Answer 2</string>
+    <string name="title_edit_card">Edit Existing Card</string>
+    <string name="title_new_card">Add New Card</string>
 </resources>

@@ -18,6 +18,17 @@ public class EditFlashcardActivity extends AppCompatActivity
     EditText editText_correct;
     EditText editText_wrong1;
     EditText editText_wrong2;
+    TextView textView_title;
+    Boolean direction = true;
+
+    @Override
+    public void finish() {
+        super.finish();
+        if(direction)
+            overridePendingTransition(R.anim.right_in, R.anim.left_out);
+        else
+            overridePendingTransition(R.anim.left_in, R.anim.right_out);
+    }
 
     public void flashcardCancel(View v)
     {
@@ -53,6 +64,7 @@ public class EditFlashcardActivity extends AppCompatActivity
         editText_correct = findViewById(R.id.editTextCorrectAnswer);
         editText_wrong1 = findViewById(R.id.editTextWrongAnswer1);
         editText_wrong2 = findViewById(R.id.editTextWrongAnswer2);
+        textView_title = findViewById(R.id.editCardTitle);
 
         editText_wrong2.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -66,8 +78,12 @@ public class EditFlashcardActivity extends AppCompatActivity
             }
         });
 
-        if(getIntent().getExtras() != null && getIntent().getExtras().containsKey("current_flashcard"))
+
+        direction = getIntent().getExtras() != null && getIntent().getExtras().containsKey("current_flashcard");
+        if(direction)
         {
+            textView_title.setText(R.string.title_edit_card);
+
             flashcard = (Flashcard) getIntent().getExtras().getSerializable("current_flashcard");
 
             editText_question.setText(flashcard.getQuestion());
@@ -91,5 +107,7 @@ public class EditFlashcardActivity extends AppCompatActivity
                     break;
             }
         }
+        else
+            textView_title.setText(R.string.title_new_card);
     }
 }
