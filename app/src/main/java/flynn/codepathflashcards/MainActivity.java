@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewAnimationUtils;
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity
 
     int user_answered = 0;
     int flashcard_number = 0;
+    long time_left;
 
     boolean answered = false;
 
@@ -53,6 +55,9 @@ public class MainActivity extends AppCompatActivity
 
     Animation leftOutAnim;
     Animation rightInAnim;
+
+    CountDownTimer countDownTimer;
+    CountDownTimer defaulftTimer;
 
     //Reload all flashcards from resource strings
     public void resetFlashcards()
@@ -65,10 +70,10 @@ public class MainActivity extends AppCompatActivity
     {
         flashcard_number = 0;
 
-        loadFlashcard(flashcard_number);
+        loadFlashcard(flashcard_number, true);
     }
 
-    public void loadFlashcard(int index)
+    public void loadFlashcard(int index, boolean resetTimer)
     {
         if(index > -1 && index < flashcards.size())
         {
@@ -79,7 +84,7 @@ public class MainActivity extends AppCompatActivity
             current_flashcard = null;
 
         }
-        displayFlashcard(current_flashcard, true);
+        displayFlashcard(current_flashcard, true, resetTimer);
     }
 
     //Delete a flashcard
@@ -87,7 +92,7 @@ public class MainActivity extends AppCompatActivity
     {
         flashcardDatabase.deleteCard(card);
         flashcards = flashcardDatabase.getAllCards();
-        loadFlashcard(random.nextInt(Math.max(flashcards.size(),1)));
+        loadFlashcard(random.nextInt(Math.max(flashcards.size(),1)), true);
     }
 
     //Handles deleting a card
@@ -120,6 +125,7 @@ public class MainActivity extends AppCompatActivity
     {
         if(!answered && current_flashcard != null)
         {
+            countDownTimer.cancel();
             Button tv = (Button) v;
 
             //Find out which answer was clicked
@@ -133,7 +139,7 @@ public class MainActivity extends AppCompatActivity
                 }
             }
 
-            //Takes care of the appearance of the wuestion textView
+            //Takes care of the appearance of the question textView
             flashcard_answer.setText(current_flashcard.getAnswers()[current_flashcard.getCorrectIndex()]);
 
 
@@ -151,7 +157,7 @@ public class MainActivity extends AppCompatActivity
             // hide the question and show the answer to prepare for playing the animation!
             flashcard_answer.setVisibility(View.VISIBLE);
 
-            anim.setDuration(500);
+            anim.setDuration(200);
             anim.start();
 
 
@@ -180,7 +186,7 @@ public class MainActivity extends AppCompatActivity
         {
             flashcard_number = ++flashcard_number>flashcards.size()-1?0:flashcard_number;
 
-            loadFlashcard(flashcard_number);
+            loadFlashcard(flashcard_number, true);
         }
     }
 
@@ -188,9 +194,19 @@ public class MainActivity extends AppCompatActivity
     {
         flashcard_number = random.nextInt(Math.max(flashcards.size(),1));
 
-        loadFlashcard(flashcard_number);
+        loadFlashcard(flashcard_number, true);
     }
 
+    public void displayFlashcard(Flashcard card, boolean randomize, boolean resetTimer)
+    {
+        if(resetTimer)
+        {
+            countDownTimer.cancel();
+            countDownTimer = defaulftTimer;
+            countDownTimer.start();
+        }
+        displayFlashcard(card, randomize);
+    }
 
     public void displayFlashcard(Flashcard card, boolean randomize)
     {
@@ -235,11 +251,13 @@ public class MainActivity extends AppCompatActivity
     {
         if(answered)
         {
+            countDownTimer.cancel();
             edit.setVisibility(VISIBLE);
             add.setVisibility(VISIBLE);
             displayFlashcard(current_flashcard, false);
             answered = true;
             flashcard_answer.setText(current_flashcard.getAnswers()[current_flashcard.getCorrectIndex()]);
+            flashcard_answer.setVisibility(VISIBLE);
 
             if (user_answered == current_flashcard.getCorrectIndex())
             {
@@ -256,7 +274,7 @@ public class MainActivity extends AppCompatActivity
         }
         else
         {
-            displayFlashcard(current_flashcard, false);
+            displayFlashcard(current_flashcard, false, false);
         }
     }
 
@@ -286,6 +304,7 @@ public class MainActivity extends AppCompatActivity
         // Save the state of item position
         outState.putInt("flashcard_number", flashcard_number);
         outState.putInt("answer_num", user_answered);
+        outState.putLong("time_left", time_left);
         outState.putBoolean("answered", answered);
         outState.putSerializable("flashcard", current_flashcard);
         outState.putSerializable("flashcards", (Serializable)flashcards);
@@ -301,6 +320,21 @@ public class MainActivity extends AppCompatActivity
         answered = savedInstanceState.getBoolean("answered");
         current_flashcard = (Flashcard)savedInstanceState.getSerializable("flashcard");
         flashcards = (ArrayList<Flashcard>)savedInstanceState.getSerializable("flashcards");
+        time_left = savedInstanceState.getLong("time_left");
+
+        countDownTimer.cancel();
+        countDownTimer = new CountDownTimer(time_left, 1000) {
+            public void onTick(long millisUntilFinished) {
+                time_left = millisUntilFinished;
+                ((TextView) findViewById(R.id.timer)).setText(millisUntilFinished / 1000 + " seconds left");
+            }
+
+            public void onFinish()
+            {
+                onClickNextQuestion(button_next);
+            }
+        };
+        countDownTimer.start();
 
         updateLayoutState();
         //show_answers = savedInstanceState.getBoolean("show_answers");
@@ -327,7 +361,7 @@ public class MainActivity extends AppCompatActivity
             }
             flashcardDatabase.insertCard(card);
             flashcards = flashcardDatabase.getAllCards();
-            loadFlashcard(flashcard_number);
+            loadFlashcard(flashcard_number, true);
         }
     }
 
@@ -359,6 +393,8 @@ public class MainActivity extends AppCompatActivity
 
         leftOutAnim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.left_out);
         rightInAnim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.right_in);
+        leftOutAnim.setDuration(200);
+        rightInAnim.setDuration(200);
 
         leftOutAnim.setAnimationListener(new Animation.AnimationListener() {
             @Override
@@ -376,6 +412,20 @@ public class MainActivity extends AppCompatActivity
                 // we don't need to worry about this method
             }
         });
+
+
+        defaulftTimer = new CountDownTimer(8000, 1000) {
+            public void onTick(long millisUntilFinished) {
+                time_left = millisUntilFinished;
+                ((TextView) findViewById(R.id.timer)).setText(millisUntilFinished / 1000 + " seconds left");
+            }
+
+            public void onFinish()
+            {
+                onClickNextQuestion(button_next);
+            }
+        };
+        countDownTimer = defaulftTimer;
 
         //Show flashcard
         resetFlashcards();
