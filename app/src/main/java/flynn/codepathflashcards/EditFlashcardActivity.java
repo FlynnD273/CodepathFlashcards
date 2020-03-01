@@ -4,7 +4,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -12,11 +11,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-
-public class AddFlashcardActivity extends AppCompatActivity
+public class EditFlashcardActivity extends AppCompatActivity
 {
     Flashcard flashcard;
     EditText editText_question;
@@ -71,7 +66,7 @@ public class AddFlashcardActivity extends AppCompatActivity
             }
         });
 
-        if(getIntent().getExtras().getSerializable("current_flashcard") != null)
+        if(getIntent().getExtras() != null && getIntent().getExtras().containsKey("current_flashcard"))
         {
             flashcard = (Flashcard) getIntent().getExtras().getSerializable("current_flashcard");
 

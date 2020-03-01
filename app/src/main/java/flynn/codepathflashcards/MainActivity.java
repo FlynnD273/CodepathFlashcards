@@ -1,36 +1,46 @@
 package flynn.codepathflashcards;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Parcelable;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 
 public class MainActivity extends AppCompatActivity
 {
+    Random random;
+
     Drawable rounded_drawable;
     Resources res;
 
     TextView flashcard_question;
 
-    Button button_next;
+    ImageView button_next;
     Button[] answer_views;
 
-    ArrayList<Flashcard> flashcards;
+    ImageView add;
+    ImageView edit;
+
+    List<Flashcard> flashcards;
 
     ArrayList<UserAnswer> user_answers;
 
@@ -43,45 +53,88 @@ public class MainActivity extends AppCompatActivity
 
     Flashcard current_flashcard;
 
-    public void reset_flashcards()
+    FlashcardDatabase flashcardDatabase;
+
+    //Reload all flashcards from resource strings
+    public void resetFlashcards()
     {
-        String[] questions = res.getStringArray(R.array.questions);
+        /*String[] questions = res.getStringArray(R.array.questions);
         String[] answers = res.getStringArray(R.array.answers);
         flashcards = new ArrayList<Flashcard>();
 
 
-        for(int i = 0; i < 1; i++)//answers.length; i++)
+        for(int i = 0; i < answers.length; i++)
         {
             flashcards.add(new Flashcard(questions[i], answers[i].split(";")));
-        }
+        }*/
+        flashcards = flashcardDatabase.getAllCards();
     }
 
+    //Sets state to starting state
     public void resetFlashcardApp()
     {
-        flashcard_question = findViewById(R.id.flashcard_content);
-
-        answer_views = new Button[]{findViewById(R.id.answer0), findViewById(R.id.answer1), findViewById(R.id.answer2)};
-        for (Button answer_view : answer_views) {
-            answer_view.setBackgroundColor(res.getColor(R.color.colorWhite));
-        }
-
-        rounded_drawable = res.getDrawable(R.drawable.round_corner);
-        button_next = findViewById(R.id.next_button);
-
         user_answers = new ArrayList<>();
         flashcard_number = 0;
         end_screen = false;
 
-        displayFlashcard(loadFlashcard(flashcard_number), true);
-        updateVisibility();
+        loadFlashcard(flashcard_number);
     }
 
-    public void answerOnClick(View v)
+    public void loadFlashcard(int index)
     {
-        if(!answered)
+        if(index > -1 && index < flashcards.size())
+        {
+            current_flashcard = flashcards.get(index);
+        }
+        else
+        {
+            current_flashcard = null;
+
+        }
+        displayFlashcard(current_flashcard, true);
+    }
+
+    //Delete a flashcard
+    public void deleteCard(Flashcard card)
+    {
+        flashcardDatabase.deleteCard(card);
+        flashcards = flashcardDatabase.getAllCards();
+        loadFlashcard(random.nextInt(Math.max(flashcards.size(),1)));
+    }
+
+    //Handles deleting a card
+    public void onClickDeleteFlashcard(View v)
+    {
+        DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                switch (which){
+                    case DialogInterface.BUTTON_POSITIVE:
+                        deleteCard(flashcardDatabase.getAllCards().get(flashcard_number));
+                        break;
+
+                    case DialogInterface.BUTTON_NEGATIVE:
+                        //No button clicked
+                        break;
+                }
+            }
+        };
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
+        builder.setMessage("Are you sure you want to delete?").setPositiveButton("Yes", dialogClickListener)
+                .setNegativeButton("No", dialogClickListener);
+        if(current_flashcard != null)
+            builder.show();
+    }
+
+    //Handles clicking on an answer
+    public void onClickAnswer(View v)
+    {
+        if(!answered && current_flashcard != null)
         {
             Button tv = (Button) v;
 
+            //Find out which answer was clicked
             answer_num = 0;
             for(int i = 0; i < answer_views.length;i++)
             {
@@ -92,19 +145,25 @@ public class MainActivity extends AppCompatActivity
                 }
             }
 
+            //No out of bounds exceptions for the user_answers List anymore!
             while(user_answers.size() <= flashcard_number)
+            {
                 user_answers.add(new UserAnswer("", "", false));
+            }
 
+            //Takes care of the appearance of the wuestion textView
             flashcard_question.setText(current_flashcard.getAnswers()[current_flashcard.getCorrectIndex()]);
             rounded_drawable.setColorFilter(res.getColor(R.color.colorAnswered), PorterDuff.Mode.SRC_ATOP);
             flashcard_question.setBackground(rounded_drawable);
             user_answers.set(flashcard_number, new UserAnswer(current_flashcard.getCorrectAnswer(), current_flashcard.getAnswers()[answer_num], false));
 
+            //If answered correctly, sets color to intense green
             if (answer_num == current_flashcard.getCorrectIndex())
             {
                 answer_views[answer_num].setBackgroundColor(res.getColor(R.color.colorAnsweredRight));
                 user_answers.get(flashcard_number).setIsCorrect(true);
             }
+            //Otherwise highlight correct answer and chosen answer
             else
             {
                 answer_views[answer_num].setBackgroundColor(res.getColor(R.color.colorAnsweredWrong));
@@ -112,71 +171,96 @@ public class MainActivity extends AppCompatActivity
                 user_answers.get(flashcard_number).setIsCorrect(false);
             }
 
+            //Show the "next question" button
             answered = true;
             button_next.setVisibility(VISIBLE);
         }
     }
 
-    public void nextQuestion(View v)
+    public void onClickNextQuestion(View v)
     {
-        flashcard_number++;
-        if(flashcard_number == flashcards.size())
+        if(flashcards.size()>0)
         {
-            displayEndScreen();
-        }
-        else if (end_screen)
-        {
-            resetFlashcardApp();
-        }
-        else
-        {
-            current_flashcard = loadFlashcard(flashcard_number);
-            displayFlashcard(current_flashcard, true);
+            flashcard_number = ++flashcard_number>flashcards.size()-1?0:flashcard_number;
+
+            loadFlashcard(flashcard_number);
         }
     }
 
-    public Flashcard loadFlashcard(int card_number)
+    public void onClickNextRandomQuestion(View v)
     {
-        current_flashcard = flashcards.get(flashcard_number);
-        return current_flashcard;
+        flashcard_number = random.nextInt(Math.max(flashcards.size(),1));
+
+        loadFlashcard(flashcard_number);
     }
+
 
     public void displayFlashcard(Flashcard card, boolean randomize)
     {
-        ((ImageView)findViewById(R.id.visibility_icon)).setImageResource(R.drawable.eye_hide);
+        //Always show answers by default if loading a new flashcard
         show_answers = true;
-        flashcard_question.setText(card.getQuestion());
-        rounded_drawable.setColorFilter(res.getColor(R.color.colorQuestion), PorterDuff.Mode.SRC_ATOP);
-        flashcard_question.setBackground(rounded_drawable);
+        updateVisibility();
 
-        button_next.setText(getString(R.string.NextQuestion));
-        answered = false;
-        button_next.setVisibility(INVISIBLE);
+        edit.setVisibility(VISIBLE);
+        add.setVisibility(VISIBLE);
 
-        if(randomize)
-            card.randomize();
-        for (int i = 0; i < answer_views.length; i++) {
-            answer_views[i].setBackgroundColor(res.getColor(R.color.colorWhite));
-            answer_views[i].setVisibility(VISIBLE);
-            answer_views[i].setText(card.getAnswers()[i]);
+        if(card != null)
+        {
+            //Sets color of the question textView to yellow and shows question
+            flashcard_question.setText(card.getQuestion());
+            rounded_drawable.setColorFilter(res.getColor(R.color.colorQuestion), PorterDuff.Mode.SRC_ATOP);
+            flashcard_question.setBackground(rounded_drawable);
+
+            //Takes care of visibility and content of the "next question" button
+            //button_next.setText(getString(R.string.NextQuestion));
+            answered = false;
+            //button_next.setVisibility(INVISIBLE);
+
+            //Randomize the answers so the first answer isn't always the correct one
+            if (randomize)
+                card.randomize();
+
+            //Set the answer ButtonViews to the appropriate text and color
+            for (int i = 0; i < answer_views.length; i++) {
+                answer_views[i].setBackgroundColor(res.getColor(R.color.colorWhite));
+                answer_views[i].setText(card.getAnswers()[i]);
+            }
+        }
+        else
+        {
+            flashcard_question.setText("");
+            rounded_drawable.setColorFilter(res.getColor(R.color.colorQuestion), PorterDuff.Mode.SRC_ATOP);
+            flashcard_question.setBackground(rounded_drawable);
+
+            //Takes care of visibility and content of the "next question" button
+            //button_next.setText(getString(R.string.NextQuestion));
+            answered = false;
+            //button_next.setVisibility(INVISIBLE);
+
+            //Set the answer ButtonViews to the appropriate text and color
+            for (Button answer_view : answer_views) {
+                answer_view.setBackgroundColor(res.getColor(R.color.colorWhite));
+                answer_view.setText("");
+            }
         }
     }
 
-    public void toggleAnswers(View v)
+    /*public void toggleAnswerVisibility(View v)
     {
-        if(flashcard_number < flashcards.size())
+        if(!end_screen)
         {
             show_answers = !show_answers;
-            updateVisibility();
+            //updateVisibility();
         }
-    }
+    }*/
 
+    //Takes care of the visibility of the answers and the state of the eye button
     public void updateVisibility()
     {
         if(show_answers && !end_screen)
         {
-            ((ImageView)findViewById(R.id.visibility_icon)).setVisibility(VISIBLE);
-            ((ImageView)findViewById(R.id.visibility_icon)).setImageResource(R.drawable.eye_hide);
+            //((ImageView)findViewById(R.id.visibility_icon)).setVisibility(VISIBLE);
+            //((ImageView)findViewById(R.id.visibility_icon)).setImageResource(R.drawable.eye_hide);
             for (Button answer_view : answer_views)
             {
                 answer_view.setVisibility(VISIBLE);
@@ -184,17 +268,13 @@ public class MainActivity extends AppCompatActivity
         }
         else
         {
-            if(end_screen)
-                ((ImageView) findViewById(R.id.visibility_icon)).setVisibility(INVISIBLE);
-
-            ((ImageView)findViewById(R.id.visibility_icon)).setImageResource(R.drawable.eye_show);
-
             for (Button answer_view : answer_views)
                 answer_view.setVisibility(INVISIBLE);
         }
     }
 
-    public void displayEndScreen()
+    //Shows the summary screen
+    /*public void displayEndScreen()
     {
         end_screen = true;
         int num_correct_answers = 0;
@@ -204,25 +284,32 @@ public class MainActivity extends AppCompatActivity
                 num_correct_answers++;
         }
 
+        //Score
         flashcard_question.setText(getString(R.string.endText, String.valueOf(num_correct_answers), String.valueOf(flashcards.size())));
         rounded_drawable.setColorFilter(res.getColor(R.color.colorAnswered), PorterDuff.Mode.SRC_ATOP);
         flashcard_question.setBackground(rounded_drawable);
 
+        //Hide answer buttons
         show_answers = false;
         updateVisibility();
 
         button_next.setVisibility(VISIBLE);
-        button_next.setText(getString(R.string.Restart));
-    }
+        //button_next.setText(getString(R.string.Restart));
+
+        edit.setVisibility(INVISIBLE);
+        add.setVisibility(INVISIBLE);
+    }*/
 
     public void updateLayoutState()
     {
-        if(end_screen)
+        /*if(end_screen)
         {
             displayEndScreen();
         }
-        else if(answered)
+        else */if(answered)
         {
+            edit.setVisibility(VISIBLE);
+            add.setVisibility(VISIBLE);
             displayFlashcard(current_flashcard, false);
             answered = true;
             flashcard_question.setText(current_flashcard.getAnswers()[current_flashcard.getCorrectIndex()]);
@@ -250,9 +337,20 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    public void addFlashcardLayout(View v)
+    public void onClickEditFlashcard(View v)
     {
-        Intent intent = new Intent(MainActivity.this, AddFlashcardActivity.class);
+        if(current_flashcard != null)
+        {
+            Intent intent = new Intent(MainActivity.this, EditFlashcardActivity.class);
+            intent.putExtra("current_flashcard", (Serializable) current_flashcard);
+            MainActivity.this.startActivityForResult(intent, 1);
+        }
+    }
+
+    //Go to add flashcard activity
+    public void onClickAddFlashcard(View v)
+    {
+        Intent intent = new Intent(MainActivity.this, EditFlashcardActivity.class);
         MainActivity.this.startActivityForResult(intent, 0);
     }
 
@@ -265,20 +363,10 @@ public class MainActivity extends AppCompatActivity
         outState.putInt("answer_num", answer_num);
         outState.putBoolean("answered", answered);
         outState.putBoolean("end_screen", end_screen);
-        outState.putBoolean("show_answers", show_answers);
+        //outState.putBoolean("show_answers", show_answers);
         outState.putSerializable("flashcard", current_flashcard);
         outState.putSerializable("user_answers", user_answers);
-        outState.putSerializable("flashcards", flashcards);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data)
-    {
-        if(requestCode == 0)
-        {
-            flashcards.add((Flashcard) data.getExtras().getSerializable("flashcards"));
-            //flashcards.add(new Flashcard("qwe", new String[] { "0", "1", "2" }));
-        }
+        outState.putSerializable("flashcards", (Serializable)flashcards);
     }
 
     @Override
@@ -295,8 +383,32 @@ public class MainActivity extends AppCompatActivity
         flashcards = (ArrayList<Flashcard>)savedInstanceState.getSerializable("flashcards");
 
         updateLayoutState();
-        show_answers = savedInstanceState.getBoolean("show_answers");
-        updateVisibility();
+        //show_answers = savedInstanceState.getBoolean("show_answers");
+        //updateVisibility();
+    }
+
+    //Retrieve data from flashcard adding activity
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d("add", "Added or edited flashcard");
+        if (resultCode == RESULT_OK)
+        {
+            Flashcard card = (Flashcard) data.getExtras().getSerializable("flashcard");
+            switch(requestCode)
+            {
+                case 0:
+                    Toast.makeText(getApplicationContext(), "Successfully Added Flashcard", Toast.LENGTH_SHORT).show();
+                    break;
+                case 1:
+                    flashcardDatabase.deleteCard(current_flashcard);
+                    Toast.makeText(getApplicationContext(), "Successfully Edited Flashcard", Toast.LENGTH_SHORT).show();
+                    break;
+            }
+            flashcardDatabase.insertCard(card);
+            flashcards = flashcardDatabase.getAllCards();
+            loadFlashcard(flashcard_number);
+        }
     }
 
     @Override
@@ -307,7 +419,26 @@ public class MainActivity extends AppCompatActivity
 
         res = getResources();
 
-        reset_flashcards();
+        //INITIALIZE EVERYTHING
+        flashcardDatabase = new FlashcardDatabase(getApplicationContext());
+
+        flashcard_question = findViewById(R.id.flashcard_content);
+
+        answer_views = new Button[]{findViewById(R.id.answer0), findViewById(R.id.answer1), findViewById(R.id.answer2)};
+        for (Button answer_view : answer_views) {
+            answer_view.setBackgroundColor(res.getColor(R.color.colorWhite));
+        }
+
+        rounded_drawable = res.getDrawable(R.drawable.round_corner);
+        button_next = findViewById(R.id.next_button);
+
+        add = findViewById(R.id.add);
+        edit = findViewById(R.id.edit);
+
+        random = new Random();
+
+        //Show flashcard
+        resetFlashcards();
         resetFlashcardApp();
     }
 }
