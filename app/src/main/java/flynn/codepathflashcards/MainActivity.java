@@ -19,6 +19,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.plattysoft.leonids.ParticleSystem;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -166,6 +168,10 @@ public class MainActivity extends AppCompatActivity
             if (user_answered == current_flashcard.getCorrectIndex())
             {
                 answer_views[user_answered].setBackgroundColor(res.getColor(R.color.colorAnsweredRight));
+                ParticleSystem ps = new ParticleSystem(MainActivity.this, 500, R.drawable.confetti, 8000);
+                ps.setSpeedRange(0.2f, 0.5f);
+                ps.setAcceleration(0.0002f, 90);
+                ps.oneShot(answer_views[user_answered], 500);
             }
             //Otherwise highlight correct answer and chosen answer
             else
