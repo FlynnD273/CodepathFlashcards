@@ -6,7 +6,7 @@
 This app allows you to cycle through a user-determined set of flashcards and will give you feedback as to whether you answered correctly or not.
 
 ### App Walk-though
-<img src="YOUR_GIF_URL_HERE" width=200><br>
+<img src="https://github.com/K9shyguy/CodepathFlashcards/blob/master/Codepath%20Lab4.gif" width=200><br>
 
 ## Required
 - [x] User sees a transition animation when going from the main screen to the add card screen.
