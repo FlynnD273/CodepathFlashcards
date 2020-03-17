@@ -61,13 +61,17 @@ public class MainActivity extends AppCompatActivity
     CountDownTimer countDownTimer;
     CountDownTimer defaulftTimer;
 
-    //Reload all flashcards from resource strings
+    /**
+     * Reload all flashcards from resource strings
+     */
     public void resetFlashcards()
     {
         flashcards = flashcardDatabase.getAllCards();
     }
 
-    //Sets state to starting state
+    /**
+     * Sets state to starting state
+     */
     public void resetFlashcardApp()
     {
         flashcard_number = 0;
@@ -75,6 +79,11 @@ public class MainActivity extends AppCompatActivity
         loadFlashcard(flashcard_number, true);
     }
 
+    /**
+     * Load a new flashcard
+     * @param index index of the flashcard in he flashcards list
+     * @param resetTimer if true, reset the countdown timer time
+     */
     public void loadFlashcard(int index, boolean resetTimer)
     {
         if(index > -1 && index < flashcards.size())
@@ -89,7 +98,10 @@ public class MainActivity extends AppCompatActivity
         displayFlashcard(current_flashcard, true, resetTimer);
     }
 
-    //Delete a flashcard
+    /**
+     * delete a flashcard from local storage, and load a new random flashcard
+     * @param card Flashcard to delete
+     */
     public void deleteCard(Flashcard card)
     {
         flashcardDatabase.deleteCard(card);
@@ -186,6 +198,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    //Handles iterating the flashcard
     public void onClickNextQuestion(View v)
     {
         if(flashcards.size()>0)
@@ -196,6 +209,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    //Handles loading a random flashcard
     public void onClickNextRandomQuestion(View v)
     {
         flashcard_number = random.nextInt(Math.max(flashcards.size(),1));
@@ -203,6 +217,32 @@ public class MainActivity extends AppCompatActivity
         loadFlashcard(flashcard_number, true);
     }
 
+    //Go to edit flashcard activity
+    public void onClickEditFlashcard(View v)
+    {
+        if(current_flashcard != null)
+        {
+            Intent intent = new Intent(MainActivity.this, EditFlashcardActivity.class);
+            intent.putExtra("current_flashcard", (Serializable) current_flashcard);
+            MainActivity.this.startActivityForResult(intent, 1);
+            overridePendingTransition(R.anim.left_in, R.anim.right_out);
+        }
+    }
+
+    //Go to add flashcard activity
+    public void onClickAddFlashcard(View v)
+    {
+        Intent intent = new Intent(MainActivity.this, EditFlashcardActivity.class);
+        MainActivity.this.startActivityForResult(intent, 0);
+        overridePendingTransition(R.anim.right_in, R.anim.left_out);
+    }
+
+    /**
+     * Displays a flashcard to the screen
+     * @param card the Flashcard to show
+     * @param randomize If true, randomizes the order of the answers
+     * @param resetTimer If true, reset the countdown timer
+     */
     public void displayFlashcard(Flashcard card, boolean randomize, boolean resetTimer)
     {
         if(resetTimer)
@@ -214,6 +254,11 @@ public class MainActivity extends AppCompatActivity
         displayFlashcard(card, randomize);
     }
 
+    /**
+     * Displays a flashcard to the screen
+     * @param card the Flashcard to show
+     * @param randomize If true, randomizes the order of the answers
+     */
     public void displayFlashcard(Flashcard card, boolean randomize)
     {
         edit.setVisibility(VISIBLE);
@@ -253,6 +298,9 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    /**
+     * Handles view visibilities and content
+     */
     public void updateLayoutState()
     {
         if(answered)
@@ -282,25 +330,6 @@ public class MainActivity extends AppCompatActivity
         {
             displayFlashcard(current_flashcard, false, false);
         }
-    }
-
-    public void onClickEditFlashcard(View v)
-    {
-        if(current_flashcard != null)
-        {
-            Intent intent = new Intent(MainActivity.this, EditFlashcardActivity.class);
-            intent.putExtra("current_flashcard", (Serializable) current_flashcard);
-            MainActivity.this.startActivityForResult(intent, 1);
-            overridePendingTransition(R.anim.left_in, R.anim.right_out);
-        }
-    }
-
-    //Go to add flashcard activity
-    public void onClickAddFlashcard(View v)
-    {
-        Intent intent = new Intent(MainActivity.this, EditFlashcardActivity.class);
-        MainActivity.this.startActivityForResult(intent, 0);
-        overridePendingTransition(R.anim.right_in, R.anim.left_out);
     }
 
     @Override
@@ -343,8 +372,6 @@ public class MainActivity extends AppCompatActivity
         countDownTimer.start();
 
         updateLayoutState();
-        //show_answers = savedInstanceState.getBoolean("show_answers");
-        //updateVisibility();
     }
 
     //Retrieve data from flashcard adding activity
